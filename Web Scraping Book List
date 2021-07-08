@@ -1,0 +1,76 @@
+import numpy as np
+import pandas as pd
+------------------------------
+# WEB SCRAPING FROM idefix.com
+------------------------------
+from bs4 import BeautifulSoup as bs
+from selenium import webdriver
+import chromedriver_binary
+
+driver = webdriver.Chrome()
+
+dict={}
+index = 0
+
+for i in range(1,81):
+    
+    source = driver.get("https://www.idefix.com/CokSatanlar/Kitap#/page={}/sort=groups.group.displayorder,asc/categoryid=0/clog=3569/parentId=0/price=-1,-1".format(i))
+    content = bs(driver.page_source, "lxml")
+    
+    for sıra in range(1,37):
+        index+=1
+        
+        try: 
+            kitap = str(content.select("div.col-xl-3:nth-child({}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > div:nth-child(3) > a:nth-child(1)".format(sıra))[0])      
+            kitap_adi = kitap.split("title")[1].split("\"")[1] 
+        except:
+            kitap_adi = ""
+            
+        try:
+            kitap_ana_kat = kitap.split("urunno")[0].split("/")[-4]       
+            kitap_alt_kat = kitap.split("urunno")[0].split("/")[-3]     
+            kitap_tur = kitap.split("urunno")[0].split("/")[-2]
+            kitap_urun_no = kitap.split("urunno=")[1].split("\"")[0]
+        except:
+            kitap_ana_kat = ""     
+            kitap_alt_kat = ""      
+            kitap_tur = ""
+            kitap_urun_no = ""
+
+        try:
+            yazar = content.select("div.col-xl-3:nth-child({}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > div:nth-child(4) > a:nth-child(1)".format(sıra))[0]
+            yazar = str(yazar).split("title")[1].split("\"")[1]
+        except:
+            yazar = ""
+
+        try:        
+            yayınevi = content.select("div.col-12:nth-child({}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > div:nth-child(5) > a:nth-child(1)".format(sıra))[0]
+            yayınevi = str(yayınevi).split("title")[1].split("\"")[1]
+        except:
+            yayınevi = ""
+
+        try:
+            eski_fiyat = content.select("div.col-12:nth-child({}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > div:nth-child(6) > span:nth-child(1)".format(sıra))[0]
+            eski_fiyat = str(eski_fiyat).split(">")[1].split("<")[0]
+        except:
+            eski_fiyat = ""
+
+        try:
+            indirimli_fiyat = content.select("div.col-12:nth-child({}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > div:nth-child(6) > span:nth-child(3)".format(sıra))[0]
+            indirimli_fiyat = str(indirimli_fiyat).split(">")[1].split("<")[0]
+        except:
+            indirimli_fiyat = ""
+            
+        try:    
+            kitap_puani = content.select("div.col-12:nth-child({}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > div:nth-child(2)".format(sıra))[0]
+            kitap_puani = str(kitap_puani).split("data-rating")[1][2]
+        except:
+            kitap_puani = ""
+
+        list = [kitap_urun_no, kitap_adi, kitap_ana_kat, kitap_alt_kat, kitap_tur, yazar, yayınevi, eski_fiyat, indirimli_fiyat, kitap_puani ]
+        dict[index] = list
+        
+df = pd.DataFrame(data = dict.values(), columns = ["urun_no", "kitap_adi","kategori","alt_kategori","kitap_turu","yazar", "yayınevi", "eski_fiyat", "indirimli_fiyat", "kitap_puani"])
+df.head(5)
+
+df.to_csv("kitap_listesi.csv")
